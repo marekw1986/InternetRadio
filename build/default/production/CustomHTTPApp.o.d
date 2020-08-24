@@ -1,0 +1,40 @@
+build/default/production/CustomHTTPApp.o:  \
+CustomHTTPApp.c  \
+TCPIPConfig.h  \
+ GenericTypeDefs.h  \
+Compiler.h  \
+fatfs/ff.h  \
+fatfs/integer.h  \
+fatfs/ffconf.h  \
+ config/config.h  \
+config/../common.h  \
+config/../fatfs/ff.h  \
+ config/../net/TCPIP.h  \
+config/../net/../GenericTypeDefs.h  \
+ config/../net/../Compiler.h  \
+config/../net/../HardwareProfile.h  \
+ config/../net/../TCPIPConfig.h  \
+config/../net/StackTsk.h  \
+ config/../net/Helpers.h  \
+config/../net/Delay.h  \
+config/../net/Tick.h  \
+ config/../net/TCPIP.h  \
+config/../net/MAC.h  \
+config/../net/ENC28J60.h  \
+ config/../net/IP.h  \
+config/../net/ARP.h  \
+config/../net/XEEPROM.h  \
+ config/../net/UDP.h  \
+config/../net/TCP.h  \
+config/../net/DHCP.h  \
+ config/../net/DNS.h  \
+config/../net/MPFS2.h  \
+config/../net/HTTP2.h  \
+ config/../net/ICMP.h  \
+config/../net/SNTP.h  \
+config/../net/TCPIP.h  \
+ config/../nvram/nvram.h  \
+nvram/nvram.h  \
+time/time.h  \
+common.h  \
+net/TCPIP.h 

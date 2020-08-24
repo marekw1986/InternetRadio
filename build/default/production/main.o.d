@@ -1,0 +1,50 @@
+build/default/production/main.o:  \
+main.c  \
+usb/usb.h  \
+usb/../Compiler.h  \
+ usb/usb_config.h  \
+usb/usb_common.h  \
+usb/usb_ch9.h  \
+usb/usb_host.h  \
+ usb/usb_hal.h  \
+usb/usb_hal_pic32.h  \
+usb/usb_host_msd.h  \
+ usb/usb_host_msd_scsi.h  \
+usb/usb.h  \
+usb/FSDefs.h  \
+fatfs/ff.h  \
+ fatfs/integer.h  \
+fatfs/ffconf.h  \
+fatfs/diskio.h  \
+delay/delay.h  \
+time/time.h  \
+ uart/uart.h  \
+common.h  \
+net/TCPIP.h  \
+net/../GenericTypeDefs.h  \
+ net/../Compiler.h  \
+net/../HardwareProfile.h  \
+net/../TCPIPConfig.h  \
+ net/../GenericTypeDefs.h  \
+net/../Compiler.h  \
+net/StackTsk.h  \
+net/Helpers.h  \
+ net/Delay.h  \
+net/Tick.h  \
+net/TCPIP.h  \
+net/MAC.h  \
+net/ENC28J60.h  \
+net/IP.h  \
+ net/ARP.h  \
+net/XEEPROM.h  \
+net/UDP.h  \
+net/TCP.h  \
+net/DHCP.h  \
+net/DNS.h  \
+ net/MPFS2.h  \
+net/HTTP2.h  \
+net/ICMP.h  \
+net/SNTP.h  \
+vs1003/vs1003.h  \
+ nvram/nvram.h  \
+HardwareProfile.h 
