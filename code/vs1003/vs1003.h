@@ -19,7 +19,7 @@
 #define VS_CS_PIN		LATEbits.LATE7
 #define VS_DCS_TRIS     TRISEbits.TRISE6
 #define VS_DCS_PIN      LATEbits.LATE6
-#define VS_RESET_TRIS   TRISCbits.TRISC12
+#define VS_RESET_TRIS   TRISCbits.TRISC2
 #define VS_RESET_PIN	LATCbits.LATC2
 
 #define RXNE    0x01

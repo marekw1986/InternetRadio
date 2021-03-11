@@ -128,6 +128,7 @@ int main(int argc, char** argv) {
         
         if ((uint32_t)(millis()-usb_timer) >= 5000) {
             usb_timer = millis();
+            printf("Test, should be every 5s\r\n");
             //usb_write();
         }
         

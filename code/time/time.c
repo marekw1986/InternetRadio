@@ -8,8 +8,8 @@ static volatile uint32_t upt = 0;
 
 
 void time_init (void) {
-    OpenTimer3(T3_ON | T3_PS_1_1 | T3_SOURCE_INT, 80000);
-    ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
+    OpenTimer2(T2_ON | T2_PS_1_2 | T2_SOURCE_INT, 40000);
+    ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
 }
 
 uint32_t millis (void) {
@@ -49,9 +49,8 @@ uint32_t get_fattime (void) {
 //    return 0xFFFFFFFF;
 }
 
-void __ISR(_TIMER_3_VECTOR, ipl2auto) _Timer3Handler(void) {
-    //IFS0CLR = _IFS0_T1IF_MASK;
-    mT3ClearIntFlag();
+void __ISR(_TIMER_2_VECTOR, ipl2auto) _Timer2Handler(void) {
+    mT2ClearIntFlag();
 	milliseconds++;
     if (milliseconds%1000 == 0) upt++;
 }

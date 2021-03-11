@@ -64,6 +64,10 @@
 #define SM_ADCPM_HP         13
 #define SM_LINE_IN          14
 
+uint8_t vsBuffer[2048];
+uint16_t vsBufferIndex = 0;
+uint16_t vsBufferSize = 0;
+
 // Register names
 
 typedef enum {
@@ -161,6 +165,16 @@ void VS1003_sdi_send_buffer(const uint8_t* data, int len) {
 
 /****************************************************************************/
 
+void VS1003_sdi_send_chunk(const uint8_t* data, int len) {
+    if (len > 32) return;
+    data_mode_on();
+    await_data_request();
+    while ( len-- ) VS1003_SPI_transfer(*data++);
+    data_mode_off();
+}
+
+/****************************************************************************/
+
 void VS1003_sdi_send_zeroes(int len) {
   int chunk_length;  
   data_mode_on();
@@ -171,6 +185,31 @@ void VS1003_sdi_send_zeroes(int len) {
     while ( chunk_length-- ) VS1003_SPI_transfer(0);
   }
   data_mode_off();
+}
+
+/****************************************************************************/
+
+uint8_t VS1003_feed_from_buffer (void) {
+    uint8_t toSend = 0;
+    uint8_t *pointer;
+    
+    if (vsBufferSize == 0) return 1;        // We return 1 to indicate that buffer is empty
+    if (!VS_DREQ_PIN) return 0;
+    
+    if (vsBufferSize >= 32) {
+        toSend = 32;
+    }
+    else {
+        toSend = vsBufferSize;
+    }
+    
+    pointer = vsBuffer + vsBufferIndex;
+    VS1003_sdi_send_chunk(pointer, toSend);
+    
+    vsBufferIndex += toSend;
+    vsBufferSize -= toSend;
+    
+    return 0;
 }
 
 /****************************************************************************/
