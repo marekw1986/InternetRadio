@@ -98,15 +98,10 @@ int main(int argc, char** argv) {
     if (res != FR_OK) {printf("f_mount error code: %i\r\n", res);}
     else {printf("f_mount OK\r\n");}
     
-    res = f_open(&fsrc, "2:/test.mp3", FA_READ);
-    if (res != FR_OK) {printf("f_open error code: %i\r\n", res);}
-    else {printf("f_open OK\r\n");}
-    
     StackInit();
     VS1003_begin();
     VS1003_setVolume(0x00);
-    VS1003_stopSong();
-    VS1003_startSong();
+    VS1003_play_dir("2:/");
     
     ClearWDT();
     EnableWDT();
@@ -132,20 +127,7 @@ int main(int argc, char** argv) {
             //usb_write();
         }
         
-        if (VS_DREQ_PIN) {
-            res = f_read(&fsrc, buffer, sizeof(buffer), &br);
-            if(res == FR_OK) {
-                VS1003_playChunk(buffer, br);
-            }
-            //End of file
-            if(br == 0) {
-                VS1003_stopSong();
-                VS1003_startSong();
-                res = f_lseek(&fsrc, 0);
-                if (res != FR_OK) printf("f_lseek ERROR\r\n");
-                else printf("f_lseek OK\r\n");
-            }
-        }
+        VS1003_handle();
     }
 
     return (EXIT_SUCCESS);
