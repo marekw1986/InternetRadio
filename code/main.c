@@ -111,7 +111,6 @@ int main(int argc, char** argv) {
         StackTask();
         StackApplications();
         UART_RX_STR_EVENT(buffer);
-        GenericTCPServer();
         
         USBTasks();
         disk_timerproc();
