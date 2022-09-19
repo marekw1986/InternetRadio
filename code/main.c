@@ -94,14 +94,15 @@ int main(int argc, char** argv) {
     
     delay_ms(500);  //TEST
     
-    res = f_mount(&FatFS, "2:", 1);
+    res = f_mount(&FatFS, "2:", 0);
     if (res != FR_OK) {printf("f_mount error code: %i\r\n", res);}
     else {printf("f_mount OK\r\n");}
     
     StackInit();
     VS1003_begin();
     VS1003_setVolume(0x00);
-    VS1003_play_dir("2:/");
+    //VS1003_play_dir("2:/");
+    VS1003_play_next_http_stream_from_list();
     
     ClearWDT();
     EnableWDT();
@@ -122,7 +123,7 @@ int main(int argc, char** argv) {
         
         if ((uint32_t)(millis()-usb_timer) >= 5000) {
             usb_timer = millis();
-            printf("Test, should be every 5s\r\n");
+            //printf("Test, should be every 5s\r\n");
             //usb_write();
         }
         
