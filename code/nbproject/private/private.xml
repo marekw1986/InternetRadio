@@ -14,6 +14,9 @@
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/HardwareProfile.h</file>
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/net/ENC28J60.h</file>
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/uart/uart.c</file>
+            <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/MPFSImg2.c</file>
+            <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/HTTPPrint.h</file>
+            <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/CustomHTTPApp.c</file>
         </group>
     </open-files>
 </project-private>

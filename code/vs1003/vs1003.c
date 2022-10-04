@@ -598,7 +598,7 @@ void VS1003_begin(void) {
   //SPI.setClockDivider(SPI_CLOCK_DIV4); // Fastest available
   //SPI1 configuration     
   SPI1CON = (_SPI1CON_ON_MASK  | _SPI1CON_CKE_MASK | _SPI1CON_MSTEN_MASK);    //8 bit master mode, CKE=1, CKP=0
-  SPI1BRG = (GetPeripheralClock()-1ul)/2ul/4000000;       //4MHz
+  SPI1BRG = (GetPeripheralClock()-1ul)/2ul/8000000;       //8MHz
 
   printf("VS1003 Set\r\n");
   VS1003_printDetails();

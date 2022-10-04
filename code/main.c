@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
     
     delay_ms(500);  //TEST
     
-    res = f_mount(&FatFS, "2:", 0);
+    res = f_mount(&FatFS, "1:", 0);
     if (res != FR_OK) {printf("f_mount error code: %i\r\n", res);}
     else {printf("f_mount OK\r\n");}
     

@@ -52,6 +52,9 @@ extern HTTP_STUB httpStubs[MAX_HTTP_CONNECTIONS];
 extern BYTE curHTTPID;
 
 void HTTPPrint(DWORD callbackID);
+void HTTPPrint_newip(void);
+void HTTPPrint_configChangeStatus(void);
+void HTTPPrint_configToken(void);
 void HTTPPrint_dhcpyes(void);
 void HTTPPrint_dhcpno(void);
 void HTTPPrint_ipdisp(void);
@@ -60,86 +63,87 @@ void HTTPPrint_netmask(void);
 void HTTPPrint_gw(void);
 void HTTPPrint_dns1(void);
 void HTTPPrint_dns2(void);
+void HTTPPrint_mac(void);
 void HTTPPrint_ntp(void);
-void HTTPPrint_reset(void);
-void HTTPPrint_newip(void);
+void HTTPPrint_timezone(void);
+void HTTPPrint_lstfls(void);
 void HTTPPrint_passChangeStatus(void);
-void HTTPPrint_configToken(void);
+void HTTPPrint_playStatus(void);
+void HTTPPrint_reset(void);
+void HTTPPrint_restore(void);
 void HTTPPrint_uptime(void);
 void HTTPPrint_time(void);
-void HTTPPrint_timezone(void);
 void HTTPPrint_cpufreq(void);
-void HTTPPrint_configChangeStatus(void);
-void HTTPPrint_restore(void);
-void HTTPPrint_lstfls(void);
-void HTTPPrint_mac(void);
 
 void HTTPPrint(DWORD callbackID)
 {
 	switch(callbackID)
 	{
-        case 0x00000004:
+        case 0x00000000:
+			HTTPPrint_newip();
+			break;
+        case 0x00000001:
+			HTTPPrint_configChangeStatus();
+			break;
+        case 0x00000002:
+			HTTPPrint_configToken();
+			break;
+        case 0x00000003:
 			HTTPPrint_dhcpyes();
 			break;
-        case 0x00000005:
+        case 0x00000004:
 			HTTPPrint_dhcpno();
 			break;
-        case 0x00000006:
+        case 0x00000005:
 			HTTPPrint_ipdisp();
 			break;
-        case 0x00000007:
+        case 0x00000006:
 			HTTPPrint_ip();
 			break;
-        case 0x00000008:
+        case 0x00000007:
 			HTTPPrint_netmask();
 			break;
-        case 0x00000009:
+        case 0x00000008:
 			HTTPPrint_gw();
 			break;
-        case 0x0000000a:
+        case 0x00000009:
 			HTTPPrint_dns1();
 			break;
-        case 0x0000000b:
+        case 0x0000000a:
 			HTTPPrint_dns2();
+			break;
+        case 0x0000000b:
+			HTTPPrint_mac();
 			break;
         case 0x0000000c:
 			HTTPPrint_ntp();
 			break;
         case 0x0000000d:
-			HTTPPrint_reset();
+			HTTPPrint_timezone();
 			break;
         case 0x0000000e:
-			HTTPPrint_newip();
+			HTTPPrint_lstfls();
 			break;
         case 0x0000000f:
 			HTTPPrint_passChangeStatus();
 			break;
         case 0x00000010:
-			HTTPPrint_configToken();
+			HTTPPrint_playStatus();
+			break;
+        case 0x00000011:
+			HTTPPrint_reset();
 			break;
         case 0x00000012:
-			HTTPPrint_uptime();
+			HTTPPrint_restore();
 			break;
         case 0x00000013:
-			HTTPPrint_time();
+			HTTPPrint_uptime();
 			break;
         case 0x00000014:
-			HTTPPrint_timezone();
+			HTTPPrint_time();
 			break;
         case 0x00000015:
 			HTTPPrint_cpufreq();
-			break;
-        case 0x00000016:
-			HTTPPrint_configChangeStatus();
-			break;
-        case 0x00000017:
-			HTTPPrint_restore();
-			break;
-        case 0x00000018:
-			HTTPPrint_lstfls();
-			break;
-        case 0x00000019:
-			HTTPPrint_mac();
 			break;
 		default:
 			// Output notification for undefined values

@@ -77,11 +77,13 @@ BYTE token[9];
 #if defined (HTTP_USE_POST)
 static HTTP_IO_RESULT HTTPPostConfig (void);
 static HTTP_IO_RESULT HTTPPostPass (void);
+static HTTP_IO_RESULT HTTPPostPlay (void);
 #endif
 
 enum {PASSCHANGE_UNKNOWN, PASSCHANGE_INVALID_TOKEN, PASSCHANGE_EMPTY_OLD, PASSCHANGE_WRONG_OLD, PASSCHANGE_INVALID_NEW, PASSCHANGE_OK};
 enum {CFGCHANGE_UNKNOWN, CFGCHANGE_INVALID_TOKEN, CFGCHANGE_INVALID_DHCP, CFGCHANGE_INVALID_IP, CFGCHANGE_INVALID_MAC, CFGCHANGE_INVALID_NETMASK, CFGCHANGE_INVALID_GW, CFGCHANGE_INVALID_DNS1, CFGCHANGE_INVALID_DNS2, CFGCHANGE_INVALID_NTP, CFGCHANGE_INVALID_TIMEZONE, CFGCHANGE_OK};
 enum {RESTORE_UNKNOWN, RESTORE_INVALID_TOKEN, RESTORE_OK};
+enum {PLAY_UNKNOWN, PLAY_OK, PLAY_INVALID_TOKEN, PLAY_EMPTY_URL, PLAY_INVALID_URL, PLAY_INVALID_SRC};
 
 /*****************************************************************************
   Function:
@@ -185,6 +187,9 @@ HTTP_IO_RESULT HTTPExecutePost(void) {
     if (strcmppgm2ram((char*)name, (ROM char*)"ui/config.cgi") == 0) {
 		return HTTPPostConfig();
     }
+    else if (strcmppgm2ram((char*)name, (ROM char*)"ui/play.cgi") == 0) {
+        return HTTPPostPlay();
+    }    
     else if (strcmppgm2ram((char*)name, (ROM char*)"ui/pass.cgi") == 0) {
         return HTTPPostPass();
     }
@@ -375,6 +380,87 @@ static HTTP_IO_RESULT HTTPPostPass (void) {
 	// Saving new configuration to flash
     eprom_write((void*)&newConfig, sizeof(newConfig));
     curHTTP.data[0] = PASSCHANGE_OK; 
+	return HTTP_IO_DONE;
+}
+
+static HTTP_IO_RESULT HTTPPostPlay (void) {
+    enum {PLAY_SRC_STREAM, PLAY_SRC_FILE, PLAY_SRC_DIR};
+    
+    WORD len;
+    BYTE tokenValid = 0;
+    BYTE playsrc = PLAY_SRC_STREAM; //stream is default
+    
+    char newurl[256];
+    
+    curHTTP.data[0] = PLAY_UNKNOWN;
+    
+     // Check to see if the browser is attempting to submit more data than we can parse at once.
+	if (curHTTP.byteCount > TCPIsGetReady(sktHTTP) + TCPGetRxFIFOFree(sktHTTP)) return HTTP_IO_DONE;
+
+	// Ensure that all data is waiting to be parsed.  If not, keep waiting for all of it to arrive.
+	if (TCPIsGetReady(sktHTTP) < curHTTP.byteCount) return HTTP_IO_NEED_DATA;
+    
+	// Loop while data remains
+	while (curHTTP.byteCount) {
+		// Check for complete variable
+		len = TCPFind(sktHTTP, '&', 0, FALSE);
+        if ( (len == 0xFFFF) && (TCPIsGetReady(sktHTTP) == curHTTP.byteCount) ) len = curHTTP.byteCount - 1; //Check if this is the last one
+
+		len = TCPGetArray(sktHTTP, curHTTP.data, len+1);
+		curHTTP.byteCount -= len;
+		curHTTP.data[len] = '\0';
+		HTTPURLDecode(curHTTP.data);
+		// Figure out which variable it is
+		if (memcmppgm2ram(curHTTP.data, (ROM void*)"token", 5) == 0) {
+            if (strcmp((const char*)&curHTTP.data[6], (const char*)token) == 0 ) {
+                tokenValid = 1;
+            }
+            else {
+                curHTTP.data[0] = PLAY_INVALID_TOKEN;                
+                return HTTP_IO_DONE;                
+            }
+		}          
+		else if (memcmppgm2ram(curHTTP.data, (ROM void*)"url", 3) == 0) {
+            printf("play.cgi received URL: %s\r\n", &curHTTP.data[4]);
+			if (strlen((const char*)&curHTTP.data[4]) == 0) {
+                curHTTP.data[0] = PLAY_EMPTY_URL;                
+                return HTTP_IO_DONE;
+            }
+            else {
+                strncpy(newurl, (const char*)&curHTTP.data[4], sizeof(newurl));
+                printf("New URL: %s\r\n", newurl);
+                curHTTP.data[0] = PLAY_OK;
+            }
+		}
+        else if (memcmppgm2ram(curHTTP.data, (ROM void*)"src", 3) == 0) {
+            if (memcmppgm2ram(&curHTTP.data[4], (ROM void*)"stream", 6) == 0) { playsrc = PLAY_SRC_STREAM; }
+            else if (memcmppgm2ram(&curHTTP.data[4], (ROM void*)"file", 4) == 0) { playsrc = PLAY_SRC_FILE; }
+            else if (memcmppgm2ram(&curHTTP.data[4], (ROM void*)"dir", 4) == 0) { playsrc = PLAY_SRC_DIR; }
+            else {
+                curHTTP.data[0] = PLAY_INVALID_SRC;
+                return HTTP_IO_DONE;
+            }
+        }
+	}
+    
+    //if (!tokenValid) return HTTP_IO_DONE;
+    
+    VS1003_stop();
+    switch (playsrc) {
+        case PLAY_SRC_FILE:
+            printf("Calling VS1003_play_file()\r\n");
+            VS1003_play_file(newurl);              
+            break;
+        case PLAY_SRC_DIR:
+            printf("Calling VS1003_play_dir()\r\n");
+            VS1003_play_dir(newurl);            
+            break;
+        default:
+            printf("Calling VS1003_play_http_stream()\r\n");
+            VS1003_play_http_stream(newurl);
+            break;
+    }
+    
 	return HTTP_IO_DONE;
 }
 
@@ -618,6 +704,23 @@ void HTTPPrint_configChangeStatus (void) {
         default:
         TCPPutROMString(sktHTTP, (ROM void*)"unknown_error");
         break;
+    }
+}
+
+void HTTPPrint_playStatus (void) {
+    switch (curHTTP.data[0]) {
+        case PLAY_OK:
+            TCPPutROMString(sktHTTP, (ROM void*)"ok");
+            break;
+        case PLAY_INVALID_TOKEN:
+            TCPPutROMString(sktHTTP, (ROM void*)"invalid_token");
+            break;       
+        case PLAY_EMPTY_URL:
+            TCPPutROMString(sktHTTP, (ROM void*)"empty_url");
+            break;            
+        default:
+            TCPPutROMString(sktHTTP, (ROM void*)"unknown_error");
+            break;
     }
 }
 
