@@ -27,6 +27,7 @@
 #include "vs1003/vs1003.h"
 #include "nvram/nvram.h"
 #include "HardwareProfile.h"
+#include "fatfs/sd.h"
 
 
 #pragma config FSOSCEN = ON        // ENABLE secondary oscillator
@@ -47,6 +48,7 @@
 #pragma config UPLLIDIV = DIV_2
 
 uint8_t buffer[512];
+FATFS SpiFS;
 FATFS FatFS;
 FRESULT res;
 FIL fsrc;               // file objects
@@ -94,7 +96,11 @@ int main(int argc, char** argv) {
     
     delay_ms(500);  //TEST
     
-    res = f_mount(&FatFS, "1:", 0);
+    res = f_mount(&FatFS, "0:", 1);
+    if (res != FR_OK) {printf("SPI Flash f_mount error code: %i\r\n", res);}
+    else {printf("SPI Flash f_mount OK\r\n");}    
+    
+    res = f_mount(&FatFS, "2:", 1);
     if (res != FR_OK) {printf("f_mount error code: %i\r\n", res);}
     else {printf("f_mount OK\r\n");}
     
@@ -102,7 +108,10 @@ int main(int argc, char** argv) {
     VS1003_begin();
     VS1003_setVolume(0x00);
     //VS1003_play_dir("2:/");
-    VS1003_play_next_http_stream_from_list();
+    //VS1003_play_next_http_stream_from_list();
+    
+//    i = sd_init();
+//    printf("Result of sd_init(): %d\r\n", i);
     
     ClearWDT();
     EnableWDT();
@@ -166,7 +175,7 @@ void usb_write (void) {
     FRESULT res;
     FIL file;
 
-    res = f_open(&file, "2:/test.txt", (FA_OPEN_ALWAYS | FA_WRITE));
+    res = f_open(&file, "0:/test.txt", (FA_OPEN_ALWAYS | FA_WRITE));
     if (res != FR_OK) {
         printf("f_open error code: %i\r\n", res);
         return;
