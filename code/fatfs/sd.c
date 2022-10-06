@@ -111,8 +111,13 @@ sd_bytesread=0;
 init=1;
   
   // init the SPI2 module for a slow (safe) clock speed first
-  SD_SPICON = 0x8120;     // ON, CKE=1; CKP=0, sample middle
+  //SD_SPICON = 0x8120;     // ON, CKE=1; CKP=0, sample middle
+  SD_SPICON = 0;
   SD_SPIBRG = SD_SPIBRGINITVAL;
+  SD_SPICONbits.SMP = 1;	// Delay SDI input sampling (PIC perspective) by 1/2 SPI clock
+  SD_SPICONbits.CKE = 1;
+  SD_SPICONbits.MSTEN = 1;
+  SD_SPICONbits.ON = 1;
  } 
 
 // send one byte of data and receive one back at the same time
@@ -331,9 +336,13 @@ by reconfiguring the SPI baud rate generator for a 1:2 ratio. We can now complet
 initMedia() function with the last segment: */
 
     // 6. increase speed
-    SD_SPICON = 0;              // disable the SPI2 module
+    SD_SPICON = 0;              // disable the SPI4 module
     SD_SPIBRG = SD_SPIBRGRUNVAL;             // Fpb/(2*(SD_SPIBRG+1))=  MHz
-    SD_SPICON = 0x8120; // re-enable the SPI2 module
+    SD_SPICONbits.SMP = 1;	// Delay SDI input sampling (PIC perspective) by 1/2 SPI clock
+    SD_SPICONbits.CKE = 1;
+    SD_SPICONbits.MSTEN = 1;
+    SD_SPICONbits.ON = 1;
+    //SD_SPICON = 0x8120; // re-enable the SPI2 module
 	init=0;
     return 0;
 } // init media

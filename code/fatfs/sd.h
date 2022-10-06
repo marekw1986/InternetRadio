@@ -1,6 +1,8 @@
 #ifndef SD_H
 #define	SD_H
 
+#include "../HardwareProfile.h"
+
 #define FAIL    0
 // Init ERROR code definitions
 #define E_COMMAND_ACK     0x80
@@ -24,9 +26,10 @@ int sd_writeSECTOR( LBA, const char *); // writes a block of data
 #define SD_CD_TRIS TRISFbits.TRISF2 // card detect
 #define SD_CD PORTFbits.RF2
 #define SD_SPICON SPI4CON
+#define SD_SPICONbits SPI4CONbits
 #define SD_SPIBRG SPI4BRG
-#define SD_SPIBRGINITVAL 142   // clock = Fpb/144 = 250kHz max
-#define SD_SPIBRGRUNVAL 2    ///Fpb/(2*(SD_SPIBRG+1))=  Hz
+#define SD_SPIBRGINITVAL (GetPeripheralClock()-1ul)/2ul/250000
+#define SD_SPIBRGRUNVAL (GetPeripheralClock()-1ul)/2ul/20000000
 #define SD_SPIBUF SPI4BUF
 #define SD_BUFNSENT !SPI4STATbits.SPIRBF
 
