@@ -48,8 +48,9 @@
 #pragma config UPLLIDIV = DIV_2
 
 uint8_t buffer[512];
-FATFS SpiFS;
-FATFS FatFS;
+static FATFS SpiFS;
+static FATFS UsbFS;
+static FATFS FatFS;
 FRESULT res;
 FIL fsrc;               // file objects
 UINT br;         		// File R/W count
@@ -70,7 +71,7 @@ int main(int argc, char** argv) {
     
     int i;
     
-    uint32_t wdt_timer, usb_timer, vs_timer;
+    uint32_t usb_timer;
     
     DisableWDT();
     SYSTEMConfigPerformance(SYSCLK);
@@ -100,6 +101,10 @@ int main(int argc, char** argv) {
     if (res != FR_OK) {printf("SPI Flash f_mount error code: %i\r\n", res);}
     else {printf("SPI Flash f_mount OK\r\n");}    
     
+    res = f_mount(&FatFS, "1:", 0);
+    if (res != FR_OK) {printf("USB f_mount error code: %i\r\n", res);}
+    else {printf("USB f_mount OK\r\n");}    
+    
     res = f_mount(&FatFS, "2:", 1);
     if (res != FR_OK) {printf("f_mount error code: %i\r\n", res);}
     else {printf("f_mount OK\r\n");}
@@ -125,10 +130,7 @@ int main(int argc, char** argv) {
         USBTasks();
         disk_timerproc();
         
-        if ((uint32_t)(millis()-wdt_timer) >= 300) {
-            wdt_timer = millis();
-            ClearWDT();
-        }
+        ClearWDT();
         
         if ((uint32_t)(millis()-usb_timer) >= 5000) {
             usb_timer = millis();
