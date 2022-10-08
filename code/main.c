@@ -97,11 +97,11 @@ int main(int argc, char** argv) {
     
     delay_ms(500);  //TEST
     
-    res = f_mount(&FatFS, "0:", 1);
+    res = f_mount(&SpiFS, "0:", 1);
     if (res != FR_OK) {printf("SPI Flash f_mount error code: %i\r\n", res);}
     else {printf("SPI Flash f_mount OK\r\n");}    
     
-    res = f_mount(&FatFS, "1:", 0);
+    res = f_mount(&UsbFS, "1:", 0);
     if (res != FR_OK) {printf("USB f_mount error code: %i\r\n", res);}
     else {printf("USB f_mount OK\r\n");}    
     

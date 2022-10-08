@@ -471,16 +471,16 @@ void VS1003_handle(void) {
             if (new_data_needed) {
                 unsigned int br;
                 //new_data_needed = 0;
-                FRESULT res = f_read(&fsrc, &vsBuffer[active_buffer ^ 0x01][vsBuffer_shift], 16, &br);
+                FRESULT res = f_read(&fsrc, &vsBuffer[active_buffer ^ 0x01][vsBuffer_shift], 32, &br);
                 if (res == FR_OK) {
                     //printf("%d bytes of data loaded. Buffer %d. Shift %d\r\n", br, (active_buffer ^ 0x01), vsBuffer_shift);
-                    vsBuffer_shift += 16;
+                    vsBuffer_shift += 32;
                     if (vsBuffer_shift >= VS_BUFFER_SIZE) {
                         vsBuffer_shift = 0;
                         new_data_needed = 0;
                     }
 
-                    if (br < 16) {     //end of file
+                    if (br < 32) {     //end of file
                         if (dir_flag) {
                             VS1003_play_next_audio_file_from_directory();   //it handles loops
                         }
