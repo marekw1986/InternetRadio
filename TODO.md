@@ -3,6 +3,7 @@ Internet radio based on PIC24
 
 ### Tasks
 - [ ] Implement circular buffer for audio data
+- [ ] Implement memory friendly HTTP header parser
 - [ ] Create WebUI
 
 ### Completed Column ✓
