@@ -66,7 +66,7 @@ Change History:
 
 //#define DEBUG_MODE
 
-#define RCACHE 8 //read cache  
+//#define RCACHE 8 //read cache  
 
 //#define WCACHE 8
 
