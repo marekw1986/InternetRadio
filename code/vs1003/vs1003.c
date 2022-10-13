@@ -485,16 +485,12 @@ void VS1003_handle(void) {
             
         case STREAM_FILE_GET_DATA:
             if (get_remaining_space_in_ringbuffer() > 1024) {
-                for (i=0; i<512; i++) {
-                    fres = f_read(&fsrc, &data[0], 1, &br);
-                    if ( fres == FR_OK ) {
-                        if (br == 1) { write_byte_to_ringbuffer(data[0]); }
-                        else {     //end of file
-                            VS1003_handle_end_of_file();
-                            break;
-                        }
+                fres = f_read(&fsrc, data, 32, &br);
+                if ( fres == FR_OK ) {
+                    if (br) { write_array_to_ringbuffer(data, br); }
+                    if (br < 32) {     //end of file
+                        VS1003_handle_end_of_file();
                     }
-                    if (VS_DREQ_PIN) break;
                 }
             }
             if (StreamState == STREAM_HOME) {
@@ -506,14 +502,14 @@ void VS1003_handle(void) {
             if (VS1003_feed_from_buffer() == FEED_RET_BUFFER_EMPTY) {
                 //buffer empty
                 while (get_remaining_space_in_ringbuffer() > 128) {
-                    fres = f_read(&fsrc, &data[0], 1, &br);
+                    fres = f_read(&fsrc, data, 32, &br);
                     if (fres == FR_OK) {
-                        if (br == 1) { write_byte_to_ringbuffer(data[0]); }
-                        else {  //enn of file
+                        if (br) { write_array_to_ringbuffer(data, br); }
+                        if (br < 32) {  //enn of file
                             VS1003_handle_end_of_file();
-                            break;
                         }
                     }
+                    else { break; }
                 }
             }            
             break;
