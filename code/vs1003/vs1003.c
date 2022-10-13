@@ -15,6 +15,7 @@
 
 #include "../HardwareProfile.h"
 #include "../fatfs/ff.h"
+#include "ringbuffer.h"
 #include "vs1003.h"
 #include "../net/TCPIP.h"
 #include "../common.h"
@@ -81,13 +82,6 @@ const char* internet_radios[] = {
     "http://51.255.8.139:8822/stream"                                       //Radio Pryzmat
 };
 
-#define VS_BUFFER_SIZE  8192
-
-static uint8_t  vsBuffer[2][VS_BUFFER_SIZE];
-static uint16_t vsBuffer_shift = 0;
-static uint8_t  active_buffer = 0x01;
-static uint8_t  new_data_needed = 0;
-
 FIL fsrc;
 DIR vsdir;
 
@@ -102,6 +96,7 @@ typedef enum {
     STREAM_HTTP_SOCKET_OBTAINED,
     STREAM_HTTP_SEND_REQUEST,
     STREAM_HTTP_PROCESS_HEADER,
+    STREAM_HTTP_FILL_BUFFER,
     STREAM_HTTP_GET_DATA,
     STREAM_FILE_GET_DATA,
     STREAM_HTTP_CLOSE,
@@ -118,6 +113,12 @@ typedef enum {
 } ReconnectStrategy_t;
 
 static ReconnectStrategy_t ReconnectStrategy = DO_NOT_RECONNECT;
+
+typedef enum {
+    FEED_RET_NO_DATA_NEEDED = 0,
+    FEED_RET_OK,
+    FEED_RET_BUFFER_EMPTY
+} feed_ret_t;
 
 // Register names
 
@@ -171,7 +172,8 @@ static uint8_t VS1003_SPI_transfer(uint8_t outB);
 static uint8_t is_audio_file (char* name);
 static uint8_t find_next_audio_file (FIL* file, DIR* directory, FILINFO* info);
 static void VS1003_soft_stop (void);
-
+static void VS1003_handle_end_of_file (void);
+static feed_ret_t VS1003_feed_from_buffer (void);
 
 /****************************************************************************/
 
@@ -245,20 +247,16 @@ void VS1003_sdi_send_zeroes(int len) {
 
 /****************************************************************************/
 
-uint8_t VS1003_feed_from_buffer (void) {
-    static uint16_t shift = 0;
-    
-    if (!VS_DREQ_PIN) return 0;
-    
-    VS1003_sdi_send_chunk(&vsBuffer[active_buffer][shift], 32);
-    shift += 32;
-    if (shift >= VS_BUFFER_SIZE) {
-        shift = 0;
-        active_buffer ^= 0x01;
-        new_data_needed = 1;
-    }
-    
-    return 0;
+static feed_ret_t VS1003_feed_from_buffer (void) {
+    uint8_t data[32];
+
+    if (!VS_DREQ_PIN) return FEED_RET_NO_DATA_NEEDED;
+    if (get_num_of_bytes_in_ringbuffer() < 32) return FEED_RET_BUFFER_EMPTY;
+
+    uint16_t w = read_array_from_ringbuffer(data, 32);
+    if (w == 32) VS1003_sdi_send_chunk(data, 32);
+
+    return FEED_RET_OK;
 }
 
 /****************************************************************************/
@@ -298,6 +296,10 @@ void handle_file_reading (void) {
 
 void VS1003_handle(void) {   
 	static DWORD		Timer;
+    WORD i, w;
+    uint8_t data[32];
+    unsigned int br;
+    FRESULT fres;    
 
 	switch(StreamState)
 	{
@@ -370,9 +372,8 @@ void VS1003_handle(void) {
 			// Send the packet
 			TCPFlush(VS_Socket);
             Timer = TickGet();
-            vsBuffer_shift = 0;
 			StreamState = STREAM_HTTP_PROCESS_HEADER;
-            memset(vsBuffer, 0x00, sizeof(vsBuffer));
+            prepare_http_parser();
 			break;
             
         case STREAM_HTTP_PROCESS_HEADER:
@@ -384,19 +385,9 @@ void VS1003_handle(void) {
 				break;
 			}
             
-            WORD to_load = TCPIsGetReady(VS_Socket);
-            WORD w = TCPGetArray(VS_Socket, &vsBuffer[0][vsBuffer_shift], (((VS_BUFFER_SIZE - vsBuffer_shift) >= to_load) ? to_load : (VS_BUFFER_SIZE-vsBuffer_shift)));
-            vsBuffer_shift += w;
-            if (vsBuffer_shift >= VS_BUFFER_SIZE) {
-                vsBuffer_shift = 0;
-            }
-            vsBuffer[0][vsBuffer_shift] = '\0';
-            char* tok = strstr(vsBuffer[0], "\r\n\r\n");
-            if (tok) {
-                tok[2] = '\0';
-                tok[3] = '\0';
-                //printf(vsBuffer[0]);
-                http_res_t http_result = parse_http_headers(vsBuffer[0], strlen(vsBuffer[0]), &uri);
+            w = TCPGetArray(VS_Socket, data, 32);
+            if (w) {
+                http_res_t http_result = parse_http_headers((char*)data, w, &uri);
                 switch (http_result) {
                     case HTTP_HEADER_ERROR:
                         printf("Parsing headers error\r\n");
@@ -406,7 +397,7 @@ void VS1003_handle(void) {
                     case HTTP_HEADER_OK:
                         printf("It is 200 OK\r\n");
                         Timer = TickGet();
-                        StreamState = STREAM_HTTP_GET_DATA;
+                        StreamState = STREAM_HTTP_FILL_BUFFER;     //STREAM_HTTP_GET_DATA
                         VS1003_startPlaying();
                         break;
                     case HTTP_HEADER_REDIRECTED:
@@ -414,11 +405,11 @@ void VS1003_handle(void) {
                         ReconnectStrategy = RECONNECT_IMMEDIATELY;
                         StreamState = STREAM_HTTP_CLOSE;
                         break;
+                    case HTTP_HEADER_IN_PROGRESS:
+                        break;
                     default:
                         break;
                 }
-                
-                
             }
             
             if ( (DWORD)(TickGet()-Timer) > 1*TICK_SECOND) {
@@ -429,9 +420,22 @@ void VS1003_handle(void) {
             }            
             break;
 
-		case STREAM_HTTP_GET_DATA:
-			// Check to see if the remote node has disconnected from us or sent us any application data
-			// If application data is available, write it to the UART
+        case STREAM_HTTP_FILL_BUFFER:
+            while (get_remaining_space_in_ringbuffer() > 128) {
+                if (TCPGet(VS_Socket, &data[0])) {
+                    Timer = TickGet();
+                    write_byte_to_ringbuffer(data[0]);
+                }
+                else { break; }
+            }
+            
+            if (get_remaining_space_in_ringbuffer() <= 128) {
+                printf("Buffer filled\r\n");
+                Timer = TickGet();
+                StreamState = STREAM_HTTP_GET_DATA;
+                break;
+            }
+    
 			if(TCPWasReset(VS_Socket))
 			{
 				StreamState = STREAM_HTTP_CLOSE;
@@ -439,71 +443,79 @@ void VS1003_handle(void) {
                 printf("Internet radio: socket disconnected - reseting\r\n");
 				// Do not break;  We might still have data in the TCP RX FIFO waiting for us
 			}
+    
+            if ( (DWORD)(TickGet()-Timer) > 5*TICK_SECOND) {
+                //There was no data in 5 seconds - reconnect
+                printf("Internet radio: no new data timeout - reseting\r\n");
+                ReconnectStrategy = RECONNECT_WAIT_LONG;
+                StreamState = STREAM_HTTP_CLOSE;
+            }            
+            break;
             
+		case STREAM_HTTP_GET_DATA:
+            if (get_remaining_space_in_ringbuffer() > 1024) {
+                for (i=0; i<32; i++) {
+                    if (TCPGet(VS_Socket, &data[0])) {
+                        Timer = TickGet();
+                        write_byte_to_ringbuffer(data[0]);
+                    }
+                    else { break; }
+                }
+            }
+                
+            if (VS1003_feed_from_buffer() == FEED_RET_BUFFER_EMPTY) {
+                StreamState = STREAM_HTTP_FILL_BUFFER;
+                Timer = TickGet();
+                break;
+            }
+			if(TCPWasReset(VS_Socket))
+			{
+				StreamState = STREAM_HTTP_CLOSE;
+                ReconnectStrategy = RECONNECT_WAIT_LONG;
+                printf("Internet radio: socket disconnected - reseting\r\n");
+				// Do not break;  We might still have data in the TCP RX FIFO waiting for us
+			}
             if ( (DWORD)(TickGet()-Timer) > 5*TICK_SECOND) {
                 //There was no data in 5 seconds - reconnect
                 printf("Internet radio: no new data timeout - reseting\r\n");
                 ReconnectStrategy = RECONNECT_WAIT_LONG;
                 StreamState = STREAM_HTTP_CLOSE;
             }
-            
-            if (new_data_needed) {
-			// Get count of RX bytes waiting
-                to_load = TCPIsGetReady(VS_Socket);
-                w = TCPGetArray(VS_Socket, &vsBuffer[active_buffer ^ 0x01][vsBuffer_shift], (((VS_BUFFER_SIZE - vsBuffer_shift) >= to_load) ? to_load : (VS_BUFFER_SIZE-vsBuffer_shift)));
-                //printf("Received %d bytes from audo stream, Saved in %d buffer at shift %d\r\n", w, (active_buffer ^ 0x01), shift);
-                if (w) {
-                    //We still receiving new data, so update timer to not reconnect
-                    Timer = TickGet();
-                }
-                vsBuffer_shift += w;
-                if (vsBuffer_shift >= VS_BUFFER_SIZE) {
-                    vsBuffer_shift = 0;
-                    new_data_needed = 0;
-                }
-                //printf("New shjift is %d. There is %s need for new data\r\n", shift, new_data_needed ? "still a" : "no");
-            }
-            
-            VS1003_feed_from_buffer();
 			break;
             
         case STREAM_FILE_GET_DATA:
-            if (new_data_needed) {
-                unsigned int br;
-                //new_data_needed = 0;
-                FRESULT res = f_read(&fsrc, &vsBuffer[active_buffer ^ 0x01][vsBuffer_shift], 32, &br);
-                if (res == FR_OK) {
-                    //printf("%d bytes of data loaded. Buffer %d. Shift %d\r\n", br, (active_buffer ^ 0x01), vsBuffer_shift);
-                    vsBuffer_shift += 32;
-                    if (vsBuffer_shift >= VS_BUFFER_SIZE) {
-                        vsBuffer_shift = 0;
-                        new_data_needed = 0;
-                    }
-
-                    if (br < 32) {     //end of file
-                        if (dir_flag) {
-                            VS1003_play_next_audio_file_from_directory();   //it handles loops
+            if (get_remaining_space_in_ringbuffer() > 1024) {
+                for (i=0; i<512; i++) {
+                    fres = f_read(&fsrc, &data[0], 1, &br);
+                    if ( fres == FR_OK ) {
+                        if (br == 1) { write_byte_to_ringbuffer(data[0]); }
+                        else {     //end of file
+                            VS1003_handle_end_of_file();
+                            break;
                         }
-                        else {
-                            if (loop_flag) {
-                                res = f_lseek(&fsrc, 0);
-                                if (res != FR_OK) printf("f_lseek ERROR\r\n");
-                            }
-                            else {
-                                VS1003_stopPlaying();
-                                f_close(&fsrc);
-                                StreamState = STREAM_HOME;
-                            }
-                        }
-                        //VS1003_startPlaying();
-                        //res = f_lseek(&fsrc, 0);
-                        //if (res != FR_OK) printf("f_lseek ERROR\r\n");
-                        //else printf("f_lseek OK\r\n");
-                        //VS1003_play_next_audio_file_from_directory();
                     }
+                    if (VS_DREQ_PIN) break;
                 }
             }
-            VS1003_feed_from_buffer();            
+            if (StreamState == STREAM_HOME) {
+                //File had been closed in previous step
+                //due to reaching end of file with loop
+                //and dir flags cleared.
+                break;
+            }
+            if (VS1003_feed_from_buffer() == FEED_RET_BUFFER_EMPTY) {
+                //buffer empty
+                while (get_remaining_space_in_ringbuffer() > 128) {
+                    fres = f_read(&fsrc, &data[0], 1, &br);
+                    if (fres == FR_OK) {
+                        if (br == 1) { write_byte_to_ringbuffer(data[0]); }
+                        else {  //enn of file
+                            VS1003_handle_end_of_file();
+                            break;
+                        }
+                    }
+                }
+            }            
             break;
 	
 		case STREAM_HTTP_CLOSE:
@@ -590,7 +602,7 @@ void VS1003_begin(void) {
   VS1003_write_register(SCI_MODE, (1 << SM_SDINEW) | (1 << SM_RESET) );
   delay_ms(1);
   await_data_request();
-  VS1003_write_register(SCI_CLOCKF,0xB800); // Experimenting with higher clock settings
+  VS1003_write_register(SCI_CLOCKF,0xF800); // Experimenting with highest clock settings
   delay_ms(1);
   await_data_request();
 
@@ -689,7 +701,7 @@ static void VS1003_startPlaying(void) {
   
 static void VS1003_stopPlaying(void) {
     VS1003_sdi_send_zeroes(2048);
-    memset(vsBuffer, 0x00, sizeof(vsBuffer));
+    ringbuffer_clear();
 }
   
 static uint8_t VS1003_SPI_transfer(uint8_t outB) {
@@ -747,6 +759,25 @@ void VS1003_play_next_audio_file_from_directory (void) {
     }
     
     return;
+}
+
+static void VS1003_handle_end_of_file (void) {
+    FRESULT res;
+    
+    if (dir_flag) {
+        VS1003_play_next_audio_file_from_directory();   //it handles loops
+    }
+    else {
+        if (loop_flag) {
+            res = f_lseek(&fsrc, 0);
+            if (res != FR_OK) printf("f_lseek ERROR\r\n");
+        }
+        else {
+            VS1003_stopPlaying();
+            f_close(&fsrc);
+            StreamState = STREAM_HOME;
+        }
+    }    
 }
 
 /*Always call VS1003_stop() before calling that function*/
@@ -809,6 +840,7 @@ void VS1003_stop(void) {
         case STREAM_HTTP_SOCKET_OBTAINED:
         case STREAM_HTTP_SEND_REQUEST:
         case STREAM_HTTP_PROCESS_HEADER:
+        case STREAM_HTTP_FILL_BUFFER:
         case STREAM_HTTP_GET_DATA:
             if(VS_Socket != INVALID_SOCKET) {
                 TCPDisconnect(VS_Socket);

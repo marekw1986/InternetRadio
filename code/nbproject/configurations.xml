@@ -85,6 +85,7 @@
       </logicalFolder>
       <logicalFolder name="f9" displayName="VS1003" projectFiles="true">
         <itemPath>vs1003/vs1003.h</itemPath>
+        <itemPath>../../InternetRadio_PIC32_DP83848/code/vs1003/ringbuffer.h</itemPath>
       </logicalFolder>
       <itemPath>HardwareProfile.h</itemPath>
       <itemPath>Compiler.h</itemPath>
@@ -167,6 +168,7 @@
       </logicalFolder>
       <logicalFolder name="f9" displayName="VS1003" projectFiles="true">
         <itemPath>vs1003/vs1003.c</itemPath>
+        <itemPath>../../InternetRadio_PIC32_DP83848/code/vs1003/ringbuffer.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>common.c</itemPath>
@@ -179,6 +181,7 @@
   </logicalFolder>
   <sourceRootList>
     <Elem>.</Elem>
+    <Elem>../../InternetRadio_PIC32_DP83848/code/vs1003</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -349,7 +352,7 @@
       </C32CPP>
       <C32Global>
         <property key="common-include-directories" value=""/>
-        <property key="gp-relative-option" value=""/>
+        <property key="gp-relative-option" value="2"/>
         <property key="legacy-libc" value="false"/>
         <property key="mdtcm" value=""/>
         <property key="mitcm" value=""/>
@@ -411,7 +414,6 @@
         <property key="debugoptions.debug-startup" value="Use system settings"/>
         <property key="debugoptions.reset-behaviour" value="Use system settings"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
-        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>
@@ -497,6 +499,7 @@
         <property key="debugoptions.debug-startup" value="Use system settings"/>
         <property key="debugoptions.reset-behaviour" value="Use system settings"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
+        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>

@@ -32,7 +32,7 @@ typedef struct {
 	uint16_t port;
 } uri_t;
 
-typedef enum {HTTP_HEADER_ERROR = 0, HTTP_HEADER_OK, HTTP_HEADER_REDIRECTED} http_res_t;
+typedef enum {HTTP_HEADER_ERROR = 0, HTTP_HEADER_IN_PROGRESS, HTTP_HEADER_OK, HTTP_HEADER_REDIRECTED} http_res_t;
 
 
 #ifdef	__cplusplus
@@ -44,6 +44,7 @@ unsigned char BcdToByte(unsigned char bcd);
 unsigned char ByteToBcd(unsigned char i);
 unsigned char StringToMACAddress(BYTE* str, MAC_ADDR* MACAddress);
 long map(long x, long in_min, long in_max, long out_min, long out_max);
+void prepare_http_parser(void);
 http_res_t parse_http_headers(char* str, size_t len, uri_t* uri);
 uint8_t parse_url (const char* str, size_t len, uri_t* uri);
 
