@@ -94,14 +94,14 @@
 #elif defined(__dsPIC30F__)
     #define PROPER_SPICON1  (0x0017 | 0x0120)   // 1:1 primary prescale, 3:1 secondary prescale, CKE=1, MASTER mode
 #elif defined(__PIC32MX__)
-    #define PROPER_SPICON1  (_SPI2CON_ON_MASK  | _SPI2CON_CKE_MASK | _SPI2CON_MSTEN_MASK)
+    #define PROPER_SPICON1  (_SPI4CON_ON_MASK  | _SPI4CON_CKE_MASK | _SPI4CON_MSTEN_MASK)
 #else
     #define PROPER_SPICON1  (0x20)              // SSPEN bit is set, SPI in master mode, FOSC/4, IDLE state is low level
 #endif
 
 // Maximum speed of SPI Flash part in Hz
 // Should theoretically operate at 25MHz, but need to account for level-shifting delays
-#define SPIFLASH_MAX_SPI_FREQ       (16000000ul)
+#define SPIFLASH_MAX_SPI_FREQ       (20000000ul)
 
 #if defined (__18CXX)
     #define ClearSPIDoneFlag()  {SPIFLASH_SPI_IF = 0;}
