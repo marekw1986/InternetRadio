@@ -216,7 +216,7 @@ DRESULT disk_ioctl (
                 return RES_OK;
             }
             else if (cmd == GET_SECTOR_SIZE) {
-                *(WORD*)buff = 4096;
+                *(WORD*)buff = 512;
                 return RES_OK;
             }
             else if (cmd == GET_BLOCK_SIZE) {
