@@ -251,10 +251,15 @@ static feed_ret_t VS1003_feed_from_buffer (void) {
     uint8_t data[32];
 
     if (!VS_DREQ_PIN) return FEED_RET_NO_DATA_NEEDED;
-    if (get_num_of_bytes_in_ringbuffer() < 32) return FEED_RET_BUFFER_EMPTY;
+    do {
+        if (get_num_of_bytes_in_ringbuffer() < 32) return FEED_RET_BUFFER_EMPTY;
 
-    uint16_t w = read_array_from_ringbuffer(data, 32);
-    if (w == 32) VS1003_sdi_send_chunk(data, 32);
+        uint16_t w = read_array_from_ringbuffer(data, 32);
+        if (w == 32) VS1003_sdi_send_chunk(data, 32);
+        asm("nop");
+        asm("nop");
+        asm("nop");
+    } while(VS_DREQ_PIN);
 
     return FEED_RET_OK;
 }
