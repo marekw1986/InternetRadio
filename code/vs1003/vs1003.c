@@ -169,7 +169,6 @@ static inline void control_mode_off(void);
 static inline void data_mode_on(void);
 static inline void data_mode_off(void);
 static uint8_t VS1003_SPI_transfer(uint8_t outB);
-static uint8_t is_audio_file (char* name);
 static uint8_t find_next_audio_file (FIL* file, DIR* directory, FILINFO* info);
 static void VS1003_soft_stop (void);
 static void VS1003_handle_end_of_file (void);
@@ -716,7 +715,7 @@ static uint8_t VS1003_SPI_transfer(uint8_t outB) {
 }
   
 
-static uint8_t is_audio_file (char* name) {
+uint8_t is_audio_file (char* name) {
     if (strstr(name, ".MP3") || strstr(name, ".WMA") || strstr(name, ".MID") || strstr(name, ".mp3") || strstr(name, ".wma") || strstr(name, ".mid")) {
         return 1;
     }

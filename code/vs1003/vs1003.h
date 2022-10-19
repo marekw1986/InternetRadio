@@ -50,6 +50,7 @@ void VS1003_play_file (char* url);
 void VS1003_stop(void);
 void VS1003_setLoop(BOOL val);
 BOOL VS1003_getLoop(void);
+uint8_t is_audio_file (char* name);
 
 
 #ifdef	__cplusplus

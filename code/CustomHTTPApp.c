@@ -73,6 +73,10 @@ extern HTTP_STUB httpStubs[MAX_HTTP_CONNECTIONS];
 extern BYTE curHTTPID;
 
 BYTE token[9];
+char* parent;
+
+static HTTP_IO_RESULT HTTPGetRestoreCgi (void);
+static HTTP_IO_RESULT HTTPGetDirJSON (void);
 
 #if defined (HTTP_USE_POST)
 static HTTP_IO_RESULT HTTPPostConfig (void);
@@ -84,6 +88,7 @@ enum {PASSCHANGE_UNKNOWN, PASSCHANGE_INVALID_TOKEN, PASSCHANGE_EMPTY_OLD, PASSCH
 enum {CFGCHANGE_UNKNOWN, CFGCHANGE_INVALID_TOKEN, CFGCHANGE_INVALID_DHCP, CFGCHANGE_INVALID_IP, CFGCHANGE_INVALID_MAC, CFGCHANGE_INVALID_NETMASK, CFGCHANGE_INVALID_GW, CFGCHANGE_INVALID_DNS1, CFGCHANGE_INVALID_DNS2, CFGCHANGE_INVALID_NTP, CFGCHANGE_INVALID_TIMEZONE, CFGCHANGE_OK};
 enum {RESTORE_UNKNOWN, RESTORE_INVALID_TOKEN, RESTORE_OK};
 enum {PLAY_UNKNOWN, PLAY_OK, PLAY_INVALID_TOKEN, PLAY_EMPTY_URL, PLAY_INVALID_URL, PLAY_INVALID_SRC};
+enum {DIR_UNKNOWN, DIR_OK, DIR_INVALID_TOKEN};
 
 /*****************************************************************************
   Function:
@@ -142,19 +147,47 @@ BYTE HTTPCheckAuth(BYTE* cUser, BYTE* cPass)
 HTTP_IO_RESULT HTTPExecuteGet(void)
 {
 	BYTE name[20];
-    BYTE* ptr;
+//    BYTE* ptr;
     
     MPFSGetFilename(curHTTP.file, name, 20);
     if (strcmppgm2ram((char*)name, (ROM char*)"ui/restore.cgi") == 0) {
-        //curHTTP.data[0] = RESTORE_UNKNOWN;
-        ptr = HTTPGetROMArg(curHTTP.data, (ROM BYTE *)"token");
-        if ( !ptr || (strcmp((char*)ptr, (char*)token) != 0) ) {
-            curHTTP.data[0] = RESTORE_INVALID_TOKEN;
-            return HTTP_IO_DONE;
-        }
-        curHTTP.data[0] = RESTORE_OK;
+        return HTTPGetRestoreCgi();
+    }
+    else if (strcmppgm2ram((char*)name, (ROM char*)"ui/dir.json") == 0) {
+        return HTTPGetDirJSON();
     }
 	return HTTP_IO_DONE;
+}
+
+static HTTP_IO_RESULT HTTPGetRestoreCgi (void) {
+    BYTE* ptr;
+    ptr = HTTPGetROMArg(curHTTP.data, (ROM BYTE *)"token");
+    if ( !ptr || (strcmp((char*)ptr, (char*)token) != 0) ) {
+        curHTTP.data[0] = RESTORE_INVALID_TOKEN;
+        return HTTP_IO_DONE;
+    }
+    curHTTP.data[0] = RESTORE_OK;
+    return HTTP_IO_DONE;
+}
+
+static HTTP_IO_RESULT HTTPGetDirJSON (void) {
+    BYTE* ptr;
+    
+//    ptr = HTTPGetROMArg(curHTTP.data, (ROM BYTE *)"token");
+//    if ( !ptr || (strcmp((char*)ptr, (char*)token) != 0) ) {
+//        curHTTP.data[0] = DIR_INVALID_TOKEN;
+//        return HTTP_IO_DONE;
+//    }
+    
+    ptr = HTTPGetROMArg(curHTTP.data, (ROM BYTE *)"url");
+    if (ptr) {
+        parent = (char*)ptr;
+        curHTTP.data[0] = DIR_OK;
+        return HTTP_IO_DONE;
+    }
+    
+    curHTTP.data[0] = DIR_OK;   //TEMP
+    return HTTP_IO_DONE;
 }
 
 #if defined(HTTP_USE_POST)
@@ -721,6 +754,84 @@ void HTTPPrint_playStatus (void) {
         default:
             TCPPutROMString(sktHTTP, (ROM void*)"unknown_error");
             break;
+    }
+}
+
+void HTTPPrint_parent (void) {
+    TCPPutString(sktHTTP, (BYTE*)parent);  
+}
+
+void HTTPPrint_dirs (void) {
+    static DIR dir;
+    static uint8_t first_one = 1;
+    FRESULT res;
+    FILINFO info;
+    
+    if (curHTTP.callbackPos == 0) {
+        res = f_opendir(&dir, parent);
+        if (res != FR_OK) {
+            return;
+        }
+        first_one = 1;
+        curHTTP.callbackPos = 0x01;
+    }
+    
+    if (f_readdir(&dir, &info) != FR_OK) {
+        f_closedir(&dir);
+        curHTTP.callbackPos = 0x00;
+        return;
+    }
+    
+    if (info.fname[0]) {
+        if (info.fattrib & AM_DIR) {
+            if (!first_one) { TCPPutROMString(sktHTTP, (ROM void*)", "); }
+            else { first_one = 0; }
+            TCPPutROMString(sktHTTP, (ROM void*)"\"");
+            TCPPutString(sktHTTP, (BYTE*)info.fname);
+            TCPPutROMString(sktHTTP, (ROM void*)"\"");
+        }
+    }
+    else {  //Empty string - end of dir
+        f_closedir(&dir);
+        curHTTP.callbackPos = 0x00;
+        return;
+    }     
+}
+
+void HTTPPrint_files (void) {
+    static DIR dir;
+    static uint8_t first_one = 1;
+    FRESULT res;
+    FILINFO info;
+    
+    if (curHTTP.callbackPos == 0) {
+        res = f_opendir(&dir, parent);
+        if (res != FR_OK) {
+            return;
+        }
+        first_one = 1;
+        curHTTP.callbackPos = 0x01;
+    }
+    
+    if (f_readdir(&dir, &info) != FR_OK) {
+        f_closedir(&dir);
+        curHTTP.callbackPos = 0x00;
+        return;
+    }    
+    
+    if (info.fname[0]) {
+        if (is_audio_file((char*)info.fname)) {
+            if (!first_one) { TCPPutROMString(sktHTTP, (ROM void*)", "); }
+            else { first_one = 0; }
+            TCPPutROMString(sktHTTP, (ROM void*)"\"");
+            TCPPutString(sktHTTP, (BYTE*)info.fname);
+            TCPPutROMString(sktHTTP, (ROM void*)"\"");
+        }
+    }
+    else {
+        f_closedir(&dir);
+        curHTTP.callbackPos = 0x00;
+        return;
     }
 }
 
