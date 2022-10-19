@@ -66,6 +66,9 @@ void HTTPPrint_dns2(void);
 void HTTPPrint_mac(void);
 void HTTPPrint_ntp(void);
 void HTTPPrint_timezone(void);
+void HTTPPrint_parent(void);
+void HTTPPrint_dirs(void);
+void HTTPPrint_files(void);
 void HTTPPrint_lstfls(void);
 void HTTPPrint_passChangeStatus(void);
 void HTTPPrint_playStatus(void);
@@ -122,27 +125,36 @@ void HTTPPrint(DWORD callbackID)
 			HTTPPrint_timezone();
 			break;
         case 0x0000000e:
-			HTTPPrint_lstfls();
+			HTTPPrint_parent();
 			break;
         case 0x0000000f:
-			HTTPPrint_passChangeStatus();
+			HTTPPrint_dirs();
 			break;
         case 0x00000010:
-			HTTPPrint_playStatus();
+			HTTPPrint_files();
 			break;
         case 0x00000011:
-			HTTPPrint_reset();
+			HTTPPrint_lstfls();
 			break;
         case 0x00000012:
-			HTTPPrint_restore();
+			HTTPPrint_passChangeStatus();
 			break;
         case 0x00000013:
-			HTTPPrint_uptime();
+			HTTPPrint_playStatus();
 			break;
         case 0x00000014:
-			HTTPPrint_time();
+			HTTPPrint_reset();
 			break;
         case 0x00000015:
+			HTTPPrint_restore();
+			break;
+        case 0x00000016:
+			HTTPPrint_uptime();
+			break;
+        case 0x00000017:
+			HTTPPrint_time();
+			break;
+        case 0x00000018:
 			HTTPPrint_cpufreq();
 			break;
 		default:

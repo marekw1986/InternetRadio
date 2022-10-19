@@ -12,6 +12,9 @@
 +mac
 +ntp
 +timezone
++parent
++dirs
++files
 +lstfls
 +passChangeStatus
 +playStatus
