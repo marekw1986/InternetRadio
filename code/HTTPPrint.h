@@ -44,7 +44,7 @@
 #ifndef __HTTPPRINT_H
 #define __HTTPPRINT_H
 
-#include "net/TCPIP.h"
+#include "TCPIP Stack/TCPIP.h"
 
 #if defined(STACK_USE_HTTP2_SERVER)
 

@@ -8,7 +8,6 @@
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/vs1003/vs1003.c</file>
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/vs1003/vs1003.h</file>
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/TCPIPConfig.h</file>
-            <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/common.c</file>
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/common.h</file>
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/net/ENC28J60.c</file>
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/HardwareProfile.h</file>
@@ -17,6 +16,7 @@
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/MPFSImg2.c</file>
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/HTTPPrint.h</file>
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/CustomHTTPApp.c</file>
+            <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/usb/usb_host_msd_scsi.c</file>
         </group>
     </open-files>
 </project-private>

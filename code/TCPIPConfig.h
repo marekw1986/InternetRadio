@@ -333,7 +333,7 @@
 
 	// Maximum numbers of simultaneous HTTP connections allowed.
 	// Each connection consumes 2 bytes of RAM and a TCP socket
-	#define MAX_HTTP_CONNECTIONS	(5u)
+	#define MAX_HTTP_CONNECTIONS	(3u)
 
 	// Optional setting to use PIC RAM instead of Ethernet/Wi-Fi RAM for
 	// storing HTTP Connection Context variables (HTTP_CONN structure for each 
