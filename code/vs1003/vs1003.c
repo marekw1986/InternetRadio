@@ -68,18 +68,20 @@
 #define SM_ADCPM_HP         13
 #define SM_LINE_IN          14
 
-const char* internet_radios[] = {
-    "http://redir.atmcdn.pl/sc/o2/Eurozet/live/antyradio.livx?audio=5",     //Antyradio
-    "http://stream3.polskieradio.pl:8900/",                                 //PR1
-    "http://stream3.polskieradio.pl:8902/",                                 //PR2
-    "http://stream3.polskieradio.pl:8904/",                                 //PR3
-    "http://stream4.nadaje.com:9680/radiokrakow-s3",                        //Kraków
-    "http://195.150.20.5/rmf_fm",                                           //RMF
-    "http://redir.atmcdn.pl/sc/o2/Eurozet/live/audio.livx?audio=5",         //Zet
-    "http://ckluradio.laurentian.ca:88/broadwave.mp3",                      //CKLU
-    "http://stream.rcs.revma.com/an1ugyygzk8uv",                            //Radio 357
-    "http://stream.rcs.revma.com/ypqt40u0x1zuv",                            //Radio Nowy Swiat
-    "http://51.255.8.139:8822/stream"                                       //Radio Pryzmat
+const radio_t internet_radios[] = {  
+    {"Antyradio" ,"http://an01.cdn.eurozet.pl/ant-waw.mp3"},                            //Antyradio
+    {"PR1", "http://stream3.polskieradio.pl:8900/"},                                 //PR1
+    {"PR2", "http://stream3.polskieradio.pl:8902/"},                                 //PR2
+    {"PR3", "http://stream3.polskieradio.pl:8904/"},                                 //PR3
+    {"Krakow 32 kbps", "http://stream4.nadaje.com:9678/radiokrakow-s2"},                        //Kraków 32kbps
+    {"Krakow", "http://stream4.nadaje.com:9680/radiokrakow-s3"},                        //Kraków    
+    {"RMF FM", "http://195.150.20.5/rmf_fm"},                                           //RMF
+    {"Radio Zet", "http://redir.atmcdn.pl/sc/o2/Eurozet/live/audio.livx?audio=5"},         //Zet
+    {"Nazwa", "http://n-15-33.dcs.redcdn.pl/sc/o2/Eurozet/live/audio.livx?audio=5"},
+    {"CKLU", "http://ckluradio.laurentian.ca:88/broadwave.mp3"},                      //CKLU
+    {"Radio 357", "http://n04a-eu.rcs.revma.com/an1ugyygzk8uv?rj-ttl=5&rj-tok=AAABg5oesUYAUHfwuNORPlsNuw"},                            //Radio 357
+    {"Radio Nowy Swiat", "http://n06a-eu.rcs.revma.com/ypqt40u0x1zuv?rj-ttl=5&rj-tok=AAABg5ofm6cAQQeawgu2hHSrGw"},                            //Radio Nowy Swiat
+    {"Radio Pryzmat", "http://51.255.8.139:8822/stream"}                                       //Radio Pryzmat
 };
 
 FIL fsrc;
@@ -98,6 +100,7 @@ typedef enum {
     STREAM_HTTP_PROCESS_HEADER,
     STREAM_HTTP_FILL_BUFFER,
     STREAM_HTTP_GET_DATA,
+    STREAM_FILE_FILL_BUFFER,                 
     STREAM_FILE_GET_DATA,
     STREAM_HTTP_CLOSE,
     STREAM_HTTP_RECONNECT_WAIT        
@@ -264,39 +267,6 @@ static feed_ret_t VS1003_feed_from_buffer (void) {
 }
 
 /****************************************************************************/
-
-/*
-void handle_file_reading (void) {
-    FRESULT res;
-    unsigned int br;
-    static uint16_t shift = 0;
-    
-    if (new_data_needed) {
-        //new_data_needed = 0;
-        
-        res = f_read(&fsrc, &vsBuffer[active_buffer ^ 0x01][shift], 512, &br);
-        if (res == FR_OK) {
-            printf("%d bytes of data loaded. Buffer %d. Shift %d\r\n", br, (active_buffer ^ 0x01), shift);
-            shift += 512;
-            if (shift >= VS_BUFFER_SIZE) {
-                shift = 0;
-                new_data_needed = 0;
-            }
-            
-            if (br < 512) {
-                VS1003_stopPlaying();
-                //VS1003_startPlaying();
-                //res = f_lseek(&fsrc, 0);
-                //if (res != FR_OK) printf("f_lseek ERROR\r\n");
-                //else printf("f_lseek OK\r\n");
-                VS1003_play_next_audio_file_from_directory();
-            }
-
-        }
-
-    }
-}
-*/
 
 void VS1003_handle(void) {   
 	static DWORD		Timer;
@@ -487,12 +457,27 @@ void VS1003_handle(void) {
             }
 			break;
             
+         case STREAM_FILE_FILL_BUFFER:
+            if (get_remaining_space_in_ringbuffer() > 128) {
+                fres = f_read(&fsrc, data, 32, &br);
+                if (fres == FR_OK) {
+                    if (br) { write_array_to_ringbuffer(data, br); }
+                    if (br < 32) {  //enn of file
+                        VS1003_handle_end_of_file();
+                    }
+                }
+            }
+            else {
+                StreamState = STREAM_FILE_GET_DATA;
+            }
+            break;
+            
         case STREAM_FILE_GET_DATA:
             if (get_remaining_space_in_ringbuffer() > 1024) {
                 for (i=0; i<64; i++) {
                     fres = f_read(&fsrc, &data[0], 1, &br);
                     if ( fres == FR_OK ) {
-                        if (br == 1) { write_byte_to_ringbuffer(data[0]); }
+                        if (br) { write_byte_to_ringbuffer(data[0]); }
                         else {     //end of file
                             VS1003_handle_end_of_file();
                         }
@@ -508,16 +493,7 @@ void VS1003_handle(void) {
             }
             if (VS1003_feed_from_buffer() == FEED_RET_BUFFER_EMPTY) {
                 //buffer empty
-                while (get_remaining_space_in_ringbuffer() > 128) {
-                    fres = f_read(&fsrc, data, 32, &br);
-                    if (fres == FR_OK) {
-                        if (br) { write_array_to_ringbuffer(data, br); }
-                        if (br < 32) {  //enn of file
-                            VS1003_handle_end_of_file();
-                        }
-                    }
-                    else { break; }
-                }
+                StreamState = STREAM_FILE_FILL_BUFFER;
             }            
             break;
 	
@@ -675,6 +651,24 @@ void VS1003_loadUserCode(const uint16_t* buf, size_t len) {
   }
 }
 
+void VS1003_play_next(void) {
+    switch (StreamState) {
+        case STREAM_FILE_FILL_BUFFER:
+        case STREAM_FILE_GET_DATA:
+            if (dir_flag) {
+                VS1003_play_next_audio_file_from_directory();
+            }
+            break;
+        case STREAM_HTTP_FILL_BUFFER:
+        case STREAM_HTTP_GET_DATA:
+            VS1003_stop();
+            VS1003_play_next_http_stream_from_list();
+            break;
+        default:
+            break;
+    }
+}
+
 
 static inline void await_data_request(void) {
     while ( !VS_DREQ_PIN );
@@ -804,7 +798,7 @@ void VS1003_play_next_http_stream_from_list(void) {
     ind++;
     if (ind >= sizeof(internet_radios)/sizeof(const char*)) ind=0;
     VS1003_stop();
-    VS1003_play_http_stream(internet_radios[ind]);
+    VS1003_play_http_stream(internet_radios[ind].url);
 }
 
 /*Always call VS1003_stop() or VS1003_soft_stop() before calling that function*/

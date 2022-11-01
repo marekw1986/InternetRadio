@@ -62,6 +62,7 @@
 #include "config/config.h"
 #include "nvram/nvram.h"
 #include "time/time.h"
+#include "vs1003/vs1003.h"
 #include "common.h"
 
 #if defined(STACK_USE_HTTP2_SERVER)
@@ -72,7 +73,7 @@ extern HTTP_CONN curHTTP;
 extern HTTP_STUB httpStubs[MAX_HTTP_CONNECTIONS];
 extern BYTE curHTTPID;
 
-extern const char* internet_radios[];   //TEMPl
+extern const radio_t internet_radios[];   //TEMPl
 
 BYTE token[9];
 char* parent;
@@ -480,9 +481,16 @@ static HTTP_IO_RESULT HTTPPostPlay (void) {
                 return HTTP_IO_DONE;
             }
             else {
-                strncpy(newurl, (const char*)&curHTTP.data[4], sizeof(newurl));
-                printf("New URL: %s\r\n", newurl);
-                curHTTP.data[0] = PLAY_OK;
+                if (strncmp(&curHTTP.data[4], "next", 5) == 0) {
+                    curHTTP.data[0] = PLAY_OK;
+                    VS1003_play_next();
+                    return HTTP_IO_DONE;
+                }
+                else {
+                    strncpy(newurl, (const char*)&curHTTP.data[4], sizeof(newurl));
+                    printf("New URL: %s\r\n", newurl);
+                    curHTTP.data[0] = PLAY_OK;
+                }
             }
 		}
         else if (memcmppgm2ram(curHTTP.data, (ROM void*)"src", 3) == 0) {
@@ -857,9 +865,11 @@ void HTTPPrint_files (void) {
                 stream_idx = 0;
             }
             if (!first_one) { TCPPutROMString(sktHTTP, (ROM void*)", "); }
-            TCPPutROMString(sktHTTP, (ROM void*)"\"");
-            TCPPutROMString(sktHTTP, (ROM void*)internet_radios[stream_idx]);
-            TCPPutROMString(sktHTTP, (ROM void*)"\"");
+            TCPPutROMString(sktHTTP, (ROM void*)"{\"name\": \"");
+            TCPPutROMString(sktHTTP, (ROM void*)internet_radios[stream_idx].name);
+            TCPPutROMString(sktHTTP, (ROM void*)"\", \"url\":\"");
+            TCPPutROMString(sktHTTP, (ROM void*)internet_radios[stream_idx].url);
+            TCPPutROMString(sktHTTP, (ROM void*)"\"}");
             first_one = 0;
             stream_idx++;
             if (stream_idx >= 11) { //TEMP

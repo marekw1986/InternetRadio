@@ -124,8 +124,8 @@ function showDir(path) {
             if (data.parent === "streams") {
 				for (i=0; i<data.files.length; i++) {
 					var opt = document.createElement('option');
-					opt.value = data.files[i];
-					opt.innerHTML = "&#128225" + data.files[i];
+					opt.value = data.files[i].url;
+					opt.innerHTML = "&#128225" + data.files[i].name;
 					opt.dataset.type = "stream";
 					select.appendChild(opt);
 				}
@@ -214,7 +214,11 @@ function playBtnAction() {
 }
 
 function stopBtnAction() {
-	play("bzdura", "dir");
+	play("");
+}
+
+function nextBtnAction() {
+	play("next");
 }
 
 </script>
@@ -227,7 +231,8 @@ function stopBtnAction() {
 <select name="files" id="files" size="15" ondblclick="fileAction()">
 </select><br>
 <input type="button" name="play_button" value="Odtwarzaj" onclick="playBtnAction()">
-<input type="button" name="stop_button" value="Stop" onclick="stopBtnAction()"><br>
+<input type="button" name="stop_button" value="Stop" onclick="stopBtnAction()">
+<input type="button" name="next_button" value="Następny" onclick="nextBtnAction()"><br>
 <label for="url">URL:</label>
 <input type="text" name="url" id="url" value=""><br>
 <label for="http_stream">Stream HTTP</label>
