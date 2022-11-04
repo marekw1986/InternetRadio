@@ -234,12 +234,12 @@ uint8_t parse_url (const char* url, size_t len, uri_t* uri) {
 	return 1;
 }
 
-uint8_t get_station_url_from_file(uint16_t number, const char* path, char* stream_name, size_t stream_name_len, char* stream_url, size_t stream_url_len) {
+uint8_t get_station_url_from_file(uint16_t number, char* stream_name, size_t stream_name_len, char* stream_url, size_t stream_url_len) {
     FIL file;
     FRESULT res;
     int result = 0;
     
-    res = f_open(&file, path, FA_READ);
+    res = f_open(&file, "1:/radio.txt", FA_READ);
     if (res != FR_OK) {
         printf("Can't open file\r\n");
         return 0;

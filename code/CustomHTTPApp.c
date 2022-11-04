@@ -73,8 +73,6 @@ extern HTTP_CONN curHTTP;
 extern HTTP_STUB httpStubs[MAX_HTTP_CONNECTIONS];
 extern BYTE curHTTPID;
 
-extern const radio_t internet_radios[];   //TEMPl
-
 BYTE token[9];
 char* parent;
 

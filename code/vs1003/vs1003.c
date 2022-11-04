@@ -68,22 +68,6 @@
 #define SM_ADCPM_HP         13
 #define SM_LINE_IN          14
 
-const radio_t internet_radios[] = {  
-    {"Antyradio" ,"http://an01.cdn.eurozet.pl/ant-waw.mp3"},                            //Antyradio
-    {"PR1", "http://stream3.polskieradio.pl:8900/"},                                 //PR1
-    {"PR2", "http://stream3.polskieradio.pl:8902/"},                                 //PR2
-    {"PR3", "http://stream3.polskieradio.pl:8904/"},                                 //PR3
-    {"Krakow 32 kbps", "http://stream4.nadaje.com:9678/radiokrakow-s2"},                        //Kraków 32kbps
-    {"Krakow", "http://stream4.nadaje.com:9680/radiokrakow-s3"},                        //Kraków    
-    {"RMF FM", "http://195.150.20.5/rmf_fm"},                                           //RMF
-    {"Radio Zet", "http://redir.atmcdn.pl/sc/o2/Eurozet/live/audio.livx?audio=5"},         //Zet
-    {"Nazwa", "http://n-15-33.dcs.redcdn.pl/sc/o2/Eurozet/live/audio.livx?audio=5"},
-    {"CKLU", "http://ckluradio.laurentian.ca:88/broadwave.mp3"},                      //CKLU
-    {"Radio 357", "http://n04a-eu.rcs.revma.com/an1ugyygzk8uv?rj-ttl=5&rj-tok=AAABg5oesUYAUHfwuNORPlsNuw"},                            //Radio 357
-    {"Radio Nowy Swiat", "http://n06a-eu.rcs.revma.com/ypqt40u0x1zuv?rj-ttl=5&rj-tok=AAABg5ofm6cAQQeawgu2hHSrGw"},                            //Radio Nowy Swiat
-    {"Radio Pryzmat", "http://51.255.8.139:8822/stream"}                                       //Radio Pryzmat
-};
-
 FIL fsrc;
 DIR vsdir;
 
@@ -793,12 +777,20 @@ void VS1003_play_http_stream(const char* url) {
 }
 
 void VS1003_play_next_http_stream_from_list(void) {
-    static int ind = 0;
+    static int ind = 1;
+    char url[256];
     
+    int tmp_ind = get_station_url_from_file(ind, NULL, 0, url, sizeof(url)-1);
+    if (tmp_ind == 0) {
+        //Function returned 0, there is no stream with such ind
+        //Try again from the beginning
+        ind = 1;
+        tmp_ind = get_station_url_from_file(ind, NULL, 0, url, sizeof(url)-1);
+        if (tmp_ind == 0) return;
+    }
     ind++;
-    if (ind >= sizeof(internet_radios)/sizeof(const char*)) ind=0;
     VS1003_stop();
-    VS1003_play_http_stream(internet_radios[ind].url);
+    VS1003_play_http_stream(url);
 }
 
 /*Always call VS1003_stop() or VS1003_soft_stop() before calling that function*/
