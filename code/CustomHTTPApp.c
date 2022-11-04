@@ -849,9 +849,12 @@ void HTTPPrint_dirs (void) {
 }
 
 void HTTPPrint_files (void) {
+    static FIL file;
     static DIR dir;
+    char line[512];
+    char name[64];
+    char url[256];
     static uint8_t first_one = 1;
-    static uint8_t stream_idx = 0;
     FRESULT res;
     FILINFO info;
     
@@ -860,21 +863,28 @@ void HTTPPrint_files (void) {
             break;
         case DIR_MODE_PRINT_STREAMS:
             if (curHTTP.callbackPos == 0) {
-                first_one = 1;
-                curHTTP.callbackPos = 0x01;
-                stream_idx = 0;
+                res = f_open(&file, "1:/radio.txt", FA_READ);
+                if (res == FR_OK) {
+                    first_one = 1;
+                    curHTTP.callbackPos = 0x01;
+                }
             }
-            if (!first_one) { TCPPutROMString(sktHTTP, (ROM void*)", "); }
-            TCPPutROMString(sktHTTP, (ROM void*)"{\"name\": \"");
-            TCPPutROMString(sktHTTP, (ROM void*)internet_radios[stream_idx].name);
-            TCPPutROMString(sktHTTP, (ROM void*)"\", \"url\":\"");
-            TCPPutROMString(sktHTTP, (ROM void*)internet_radios[stream_idx].url);
-            TCPPutROMString(sktHTTP, (ROM void*)"\"}");
-            first_one = 0;
-            stream_idx++;
-            if (stream_idx >= 11) { //TEMP
-                stream_idx=0;
+            if (f_gets(line, sizeof(line)-1, &file) != NULL) {
+                if (line[strlen(line)-1] == '\n') {
+                    line[strlen(line)-1] = '\0';
+                }
+                if (parse_stream_data_line(line, strlen(line), name, sizeof(name)-1, url, sizeof(url)-1))
+                    if (!first_one) { TCPPutROMString(sktHTTP, (ROM void*)", "); }
+                    TCPPutROMString(sktHTTP, (ROM void*)"{\"name\": \"");
+                    TCPPutROMString(sktHTTP, (ROM void*)name);
+                    TCPPutROMString(sktHTTP, (ROM void*)"\", \"url\":\"");
+                    TCPPutROMString(sktHTTP, (ROM void*)url);
+                    TCPPutROMString(sktHTTP, (ROM void*)"\"}");
+                    first_one = 0;
+            }
+            else {
                 curHTTP.callbackPos = 0x00;
+                f_close(&file);
             }
             break;
         case DIR_MODE_PRINT_FS:

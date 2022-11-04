@@ -47,6 +47,8 @@ long map(long x, long in_min, long in_max, long out_min, long out_max);
 void prepare_http_parser(void);
 http_res_t parse_http_headers(char* str, size_t len, uri_t* uri);
 uint8_t parse_url (const char* str, size_t len, uri_t* uri);
+uint8_t get_station_url_from_file(uint16_t number, const char* path, char* stream_name, size_t stream_name_len, char* stream_url, size_t stream_url_len);
+uint8_t parse_stream_data_line(char* line, size_t line_len, char* stream_name, size_t stream_name_len, char* stream_url, size_t stream_url_len);
 
 #ifdef	__cplusplus
 }

@@ -233,3 +233,75 @@ uint8_t parse_url (const char* url, size_t len, uri_t* uri) {
     uri->file[filelen] = '\0';
 	return 1;
 }
+
+uint8_t get_station_url_from_file(uint16_t number, const char* path, char* stream_name, size_t stream_name_len, char* stream_url, size_t stream_url_len) {
+    FIL file;
+    FRESULT res;
+    
+    res = f_open(&file, path, FA_READ);
+    if (res != FR_OK) {
+        printf("Can't open file\r\n");
+        return 0;
+    }
+    
+    while (f_gets(working_buffer, sizeof(working_buffer)-1, &file) != NULL) {
+        int line_number = atoi(working_buffer);
+        if (line_number && (line_number == number)) {
+            char* rest = strstr(working_buffer, " : ");
+            if (rest) {
+                *rest = '\0';
+                rest += 3;
+                if (rest >= working_buffer+sizeof(working_buffer)) {
+                    f_close(&file);
+                    return 0;
+                }
+                char* url = strstr(rest, " : ");
+                if (url) {
+                    *url = '\0';
+                    url += 3;
+                    if (url >= working_buffer+sizeof(working_buffer)) {
+                        f_close(&file);
+                        return 0;
+                    }
+                    if (stream_name) {
+                        strncpy(stream_name, rest, stream_name_len);
+                    }
+                    if (stream_url) {
+                        strncpy(stream_url, url, stream_url_len);
+                    }
+                    f_close(&file);
+                    return 1;
+                }
+            }
+        }
+    }
+    f_close(&file);
+    return 0;
+}
+
+uint8_t parse_stream_data_line(char* line, size_t line_len, char* stream_name, size_t stream_name_len, char* stream_url, size_t stream_url_len) {
+    int line_number = atoi(line);
+    
+    if (line_number > 0) {
+        char* rest = strstr(line, " : ");
+        if (rest) {
+            *rest = '\0';
+            rest += 3;
+            if (rest >= line+line_len) { return 0; }
+            char* url = strstr(rest, " : ");
+            if (url) {
+                *url = '\0';
+                url += 3;
+                if (url >= line+line_len) { return 0; }
+                if (stream_name) {
+                    strncpy(stream_name, rest, stream_name_len);
+                }
+                if (stream_url) {
+                    strncpy(stream_url, url, stream_url_len);
+                }
+                return line_number;
+            }
+        }
+    }
+    return 0;    
+}
