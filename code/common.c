@@ -237,6 +237,7 @@ uint8_t parse_url (const char* url, size_t len, uri_t* uri) {
 uint8_t get_station_url_from_file(uint16_t number, const char* path, char* stream_name, size_t stream_name_len, char* stream_url, size_t stream_url_len) {
     FIL file;
     FRESULT res;
+    int result = 0;
     
     res = f_open(&file, path, FA_READ);
     if (res != FR_OK) {
@@ -245,34 +246,10 @@ uint8_t get_station_url_from_file(uint16_t number, const char* path, char* strea
     }
     
     while (f_gets(working_buffer, sizeof(working_buffer)-1, &file) != NULL) {
-        int line_number = atoi(working_buffer);
-        if (line_number && (line_number == number)) {
-            char* rest = strstr(working_buffer, " : ");
-            if (rest) {
-                *rest = '\0';
-                rest += 3;
-                if (rest >= working_buffer+sizeof(working_buffer)) {
-                    f_close(&file);
-                    return 0;
-                }
-                char* url = strstr(rest, " : ");
-                if (url) {
-                    *url = '\0';
-                    url += 3;
-                    if (url >= working_buffer+sizeof(working_buffer)) {
-                        f_close(&file);
-                        return 0;
-                    }
-                    if (stream_name) {
-                        strncpy(stream_name, rest, stream_name_len);
-                    }
-                    if (stream_url) {
-                        strncpy(stream_url, url, stream_url_len);
-                    }
-                    f_close(&file);
-                    return 1;
-                }
-            }
+        int ret = parse_stream_data_line(working_buffer, strlen(working_buffer), stream_name, stream_name_len, stream_url, stream_url_len);
+        if (ret && ret == number) {
+            result = ret;
+            break;
         }
     }
     f_close(&file);
