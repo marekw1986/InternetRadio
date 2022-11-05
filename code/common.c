@@ -234,26 +234,32 @@ uint8_t parse_url (const char* url, size_t len, uri_t* uri) {
 	return 1;
 }
 
-uint8_t get_station_url_from_file(uint16_t number, char* stream_name, size_t stream_name_len, char* stream_url, size_t stream_url_len) {
+/*WARNING: To preserve precious memory on that hardware this function uses the same working buffer as
+ parse_http_headers(). Be sure not to use both of them at the same time. Remember that
+ parse_http_headers() is baing called multiple times by state machine.*/
+char* get_station_url_from_file(uint16_t number, char* stream_name, size_t stream_name_len) {
     FIL file;
     FRESULT res;
-    int result = 0;
+    char* result = NULL;
     
     res = f_open(&file, "1:/radio.txt", FA_READ);
     if (res != FR_OK) {
         printf("Can't open file\r\n");
-        return 0;
+        return NULL;
     }
     
     while (f_gets(working_buffer, sizeof(working_buffer)-1, &file) != NULL) {
-        int ret = parse_stream_data_line(working_buffer, strlen(working_buffer), stream_name, stream_name_len, stream_url, stream_url_len);
+        if (working_buffer[strlen(working_buffer)-1] == '\n') {
+            working_buffer[strlen(working_buffer)-1] = '\0';
+        }
+        int ret = parse_stream_data_line(working_buffer, strlen(working_buffer), stream_name, stream_name_len, working_buffer, sizeof(working_buffer)-1);
         if (ret && ret == number) {
-            result = ret;
+            result = working_buffer;
             break;
         }
     }
     f_close(&file);
-    return 0;
+    return result;
 }
 
 uint8_t parse_stream_data_line(char* line, size_t line_len, char* stream_name, size_t stream_name_len, char* stream_url, size_t stream_url_len) {

@@ -778,17 +778,18 @@ void VS1003_play_http_stream(const char* url) {
 
 void VS1003_play_next_http_stream_from_list(void) {
     static int ind = 1;
-    char url[256];
     
-    int tmp_ind = get_station_url_from_file(ind, NULL, 0, url, sizeof(url)-1);
-    if (tmp_ind == 0) {
-        //Function returned 0, there is no stream with such ind
+    char* url = get_station_url_from_file(ind, NULL, 0);
+    if (url == NULL) {
+        //Function returned NULL, there is no stream with such ind
         //Try again from the beginning
         ind = 1;
-        tmp_ind = get_station_url_from_file(ind, NULL, 0, url, sizeof(url)-1);
-        if (tmp_ind == 0) return;
+        url = get_station_url_from_file(ind, NULL, 0);
+        if (url == NULL) return;
     }
-    ind++;
+    else {
+        ind++;
+    }
     VS1003_stop();
     VS1003_play_http_stream(url);
 }

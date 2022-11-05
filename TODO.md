@@ -19,3 +19,4 @@ Internet radio based on PIC32
 - [x] Implement memory friendly HTTP header parser
 - [x] Implement memory friendly IO for SPi Flash
 - [x] Update FatFS to R0.14b
+- [x] Move list of streams to file
