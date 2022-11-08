@@ -18,6 +18,8 @@
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/CustomHTTPApp.c</file>
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/usb/usb_host_msd_scsi.c</file>
             <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/common.c</file>
+            <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/fatfs/ffconf.h</file>
+            <file>file:/home/marek/Dropbox/Projekty/InternetRadio/code/fatfs/diskio.c</file>
         </group>
     </open-files>
 </project-private>
